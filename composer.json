@@ -10,7 +10,10 @@
     "source": "https://github.com/sightpress/module-interface"
   },
   "require": {
-    "php": ">=8.5"
+    "php": ">=8.5",
+    "psr/container": "^2",
+    "psr/http-server-handler": "^1",
+    "psr/http-server-middleware": "^1"
   },
   "require-dev": {
     "friendsofphp/php-cs-fixer": "^3",

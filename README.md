@@ -9,9 +9,29 @@ same contracts.
 
 It is versioned on its own, with strict semantic versioning: a new major version means a breaking change in a contract.
 
+## What's in it
+
+- `ModuleInterface`: what every module implements: `manifest()` and `register(ModuleRegistrar $registrar)`.
+- `ModuleManifest` and `ModuleRequirement`: the module's id, version, the modules it needs, and whether it is
+  always on or on by default for new sites.
+- `ModuleRegistrar`: one typed sub-registrar per kind of addition: `services()`, `routes()`, `blockTypes()`,
+  `permissions()`, `migrations()`, `adminMenu()`, `views()`, `subscribers()`, `commands()` and `settings()`.
+- `Block\BlockType`: a content block with its schema, HTML and Markdown rendering, optional structured data and
+  its accessibility checks (`A11yRule`, `A11yIssue`).
+- Value objects: `Routing\Route`, `Access\Permission`, `Admin\AdminMenuItem`, `Setting\Setting`,
+  `Console\CommandParameter`; plus `Migration\MigrationProvider` and the `Console\Command` contract.
+
+The value objects check their values when they are built and throw `Exception\InvalidValueException` with a
+message that names the field and the rule.
+
+Interfaces that modules implement change only in a major release. Interfaces that core implements (the registrars,
+`Block\BlockContext`, `Console\CommandInput` and `Console\CommandOutput`) may gain methods in a minor release, so
+modules must not implement them.
+
 ## Requirements
 
 - PHP 8.5 or later
+- `psr/container`, `psr/http-server-handler` and `psr/http-server-middleware`
 
 ## Development
 
