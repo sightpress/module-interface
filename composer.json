@@ -3,7 +3,14 @@
   "description": "Module contracts for SightPress, a powerful CMS for everyone, designed with blind and low-vision creators and audiences in mind. Interfaces and value objects only, written in modern, object-oriented PHP.",
   "type": "library",
   "license": "GPL-3.0-or-later",
-  "keywords": ["cms", "accessibility", "a11y", "wcag", "modules", "contracts"],
+  "keywords": [
+    "cms",
+    "accessibility",
+    "a11y",
+    "wcag",
+    "modules",
+    "contracts"
+  ],
   "homepage": "https://sightpress.org",
   "support": {
     "issues": "https://github.com/sightpress/module-interface/issues",
