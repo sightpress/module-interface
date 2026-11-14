@@ -11,6 +11,10 @@ use SightPress\Module\Internal\Guard;
  *
  * Core adds it to the site's permission catalogue and grants it to the default roles listed here when a site is
  * created or the module is turned on. Site admins can change the grants afterwards.
+ *
+ * Sign-up guardrail: people who register themselves (self-registration or domain registration) can only get a role
+ * whose permissions are all {@see $allowedOnSignUp}. Core checks this when the sign-up role is chosen and again at
+ * registration, so a permission is safe until its module marks it otherwise.
  */
 final readonly class Permission
 {
@@ -34,12 +38,17 @@ final readonly class Permission
      *                                   translates it with the module's translations
      * @param string       $description  optional en-GB sentence that explains what the permission allows
      * @param list<string> $defaultRoles role names that get it by default, for example `admin`, `editor`
+     * @param bool         $allowedOnSignUp whether a role that people get when they register themselves may hold
+     *                                      it; `false` by default. Set it to `true` only for low-risk actions on
+     *                                      the person's own content (for example `page.edit.own`), never for
+     *                                      anything that manages users, roles, settings or other people's content
      */
     public function __construct(
         string $name,
         string $label,
         public string $description = '',
         array $defaultRoles = [],
+        public bool $allowedOnSignUp = false,
     ) {
         $this->name = Guard::matches(
             $name,

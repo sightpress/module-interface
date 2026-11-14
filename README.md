@@ -21,6 +21,9 @@ It is versioned on its own, with strict semantic versioning: a new major version
 - Value objects: `Routing\Route`, `Access\Permission`, `Admin\AdminMenuItem`, `Setting\Setting`,
   `Console\CommandParameter`; plus `Migration\MigrationProvider` and the `Console\Command` contract.
 
+`Access\Permission::$allowedOnSignUp` (default `false`) marks the permissions that a role given to people who
+register themselves may hold, so sign-up can never grant admin rights.
+
 The value objects check their values when they are built and throw `Exception\InvalidValueException` with a
 message that names the field and the rule.
 

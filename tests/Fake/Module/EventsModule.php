@@ -48,6 +48,13 @@ final class EventsModule implements ModuleInterface
         $registrar->blockTypes()->add(EventCardBlock::class);
 
         $registrar->permissions()->add(new Permission('events.manage', 'Manage events', defaultRoles: ['admin']));
+        $registrar->permissions()->add(new Permission(
+            'events.suggest',
+            'Suggest events',
+            'Send an event for an editor to review.',
+            ['admin', 'contributor'],
+            allowedOnSignUp: true,
+        ));
 
         $registrar->migrations()->add(new EventsMigrations());
 

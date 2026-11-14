@@ -1,4 +1,4 @@
-# Module contracts (0.1)
+# Module contracts (0.2)
 
 ## What it does
 
@@ -31,6 +31,15 @@ settings, admin menu entries). No permissions are needed to use the package itse
 `ModuleManifest`: id (`page`, `acme.events`), SemVer version, required modules with version constraints
 (`ModuleRequirement`), `required` (always on) and `enabledByDefault` (ignored for required modules).
 Invalid values throw `Exception\InvalidValueException` with a message that names the field and the rule.
+
+## Permissions and sign-up (0.2)
+
+`Permission` has `allowedOnSignUp` (bool, default `false`). People who register themselves (self-registration or
+domain registration) can only get a role whose permissions are all `allowedOnSignUp`, so they can never get admin
+rights. A module's new permission is safe by default; set `allowedOnSignUp: true` only for low-risk actions on the
+person's own content, never for managing users, roles, settings or other people's content. Core checks the sign-up
+role when it is chosen and again at registration (falling back to `member`). Example:
+`new Permission('events.suggest', 'Suggest events', allowedOnSignUp: true)`.
 
 ## Accessibility
 

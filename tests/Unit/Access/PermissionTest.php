@@ -24,6 +24,7 @@ final class PermissionTest extends TestCase
         self::assertSame('Publish pages', $permission->label);
         self::assertSame('', $permission->description);
         self::assertSame([], $permission->defaultRoles);
+        self::assertFalse($permission->allowedOnSignUp);
     }
 
     public function testAllFields(): void
@@ -33,10 +34,20 @@ final class PermissionTest extends TestCase
             'Edit own pages',
             'Edit pages you created, while they are drafts.',
             ['admin', 'editor', 'contributor'],
+            true,
         );
 
         self::assertSame('Edit pages you created, while they are drafts.', $permission->description);
         self::assertSame(['admin', 'editor', 'contributor'], $permission->defaultRoles);
+        self::assertTrue($permission->allowedOnSignUp);
+    }
+
+    public function testAllowedOnSignUpByName(): void
+    {
+        $permission = new Permission('media.upload', 'Upload media', allowedOnSignUp: true);
+
+        self::assertTrue($permission->allowedOnSignUp);
+        self::assertSame([], $permission->defaultRoles);
     }
 
     /**

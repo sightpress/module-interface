@@ -62,6 +62,8 @@ final class ModuleRegistrationTest extends TestCase
 
         self::assertSame([EventCardBlock::class], $registrar->blockTypes->blockTypes);
         self::assertSame(['admin'], $registrar->permissions->permissions['events.manage']->defaultRoles);
+        self::assertFalse($registrar->permissions->permissions['events.manage']->allowedOnSignUp);
+        self::assertTrue($registrar->permissions->permissions['events.suggest']->allowedOnSignUp);
         self::assertSame(['Acme\Events\Migrations'], array_keys($registrar->migrations->providers));
         self::assertStringEndsWith('/migrations', $registrar->migrations->providers['Acme\Events\Migrations']->directory());
         self::assertSame('events.manage', $registrar->adminMenu->items['events']->permission);
