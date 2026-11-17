@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/sightpress/module-interface/compare/0.2.0...0.3.0) (2026-11-17)
+
+
+### Features
+
+* let command parameters ask guided questions (MI-0.3) ([#10](https://github.com/sightpress/module-interface/issues/10)) ([686e6b1](https://github.com/sightpress/module-interface/commit/686e6b1a13f55a3bb35596f7bf6e45ef846b348a))
+
 ## [0.2.0](https://github.com/sightpress/module-interface/compare/0.1.0...0.2.0) (2026-11-14)
 
 
