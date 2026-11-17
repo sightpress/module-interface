@@ -21,6 +21,9 @@ final readonly class InMemoryModuleRegistrar implements ModuleRegistrar
     public InMemorySubscriberRegistrar $subscribers;
     public InMemoryCommandRegistrar $commands;
     public InMemorySettingRegistrar $settings;
+    public InMemorySearchRegistrar $search;
+    public InMemoryDashboardRegistrar $dashboard;
+    public InMemoryAssistantRegistrar $assistant;
 
     public function __construct()
     {
@@ -34,6 +37,9 @@ final readonly class InMemoryModuleRegistrar implements ModuleRegistrar
         $this->subscribers = new InMemorySubscriberRegistrar();
         $this->commands = new InMemoryCommandRegistrar();
         $this->settings = new InMemorySettingRegistrar();
+        $this->search = new InMemorySearchRegistrar();
+        $this->dashboard = new InMemoryDashboardRegistrar();
+        $this->assistant = new InMemoryAssistantRegistrar();
     }
 
     public function services(): InMemoryServiceRegistrar
@@ -84,5 +90,20 @@ final readonly class InMemoryModuleRegistrar implements ModuleRegistrar
     public function settings(): InMemorySettingRegistrar
     {
         return $this->settings;
+    }
+
+    public function search(): InMemorySearchRegistrar
+    {
+        return $this->search;
+    }
+
+    public function dashboard(): InMemoryDashboardRegistrar
+    {
+        return $this->dashboard;
+    }
+
+    public function assistant(): InMemoryAssistantRegistrar
+    {
+        return $this->assistant;
     }
 }

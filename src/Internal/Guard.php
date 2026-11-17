@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SightPress\Module\Internal;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use SightPress\Module\Exception\InvalidValueException;
 
 /**
@@ -17,6 +19,15 @@ final class Guard
      * A dotted, lower-case name such as `page.edit.own` or `blog.posts`.
      */
     public const string DOTTED_NAME = '/^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/';
+
+    /**
+     * A BCP 47 language tag in its usual casing: language, optional script, optional region, for example `en-GB`,
+     * `pt-PT`, `zh-Hant`, `zh-Hant-TW` or `es-419`.
+     */
+    public const string LOCALE = '/^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-(?:[A-Z]{2}|\d{3}))?$/';
+
+    /** Human-readable form of {@see LOCALE}, used in error messages. */
+    public const string LOCALE_RULE = 'use a language tag such as "en-GB", "pt-PT" or "zh-Hant"';
 
     /**
      * @return non-empty-string
@@ -42,6 +53,31 @@ final class Guard
         }
 
         return $value;
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    public static function locale(string $value, string $field): string
+    {
+        return self::matches($value, self::LOCALE, $field, self::LOCALE_RULE);
+    }
+
+    public static function notNegative(int $value, string $field): int
+    {
+        if ($value < 0) {
+            throw new InvalidValueException(sprintf('%s must not be negative (%d).', $field, $value));
+        }
+
+        return $value;
+    }
+
+    /**
+     * The same moment in UTC, so every date in a contract is in UTC whatever the caller passed.
+     */
+    public static function utc(DateTimeImmutable $value): DateTimeImmutable
+    {
+        return $value->setTimezone(new DateTimeZone('UTC'));
     }
 
     /**

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace SightPress\Module\Tests\Unit\Internal;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SightPress\Module\Exception\InvalidValueException;
 use SightPress\Module\Internal\Guard;
@@ -35,6 +38,61 @@ final class GuardTest extends TestCase
     {
         $this->expectException(InvalidValueException::class);
         Guard::matches('', '/^.*$/', 'Field', 'anything');
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function locales(): iterable
+    {
+        foreach (['en', 'en-GB', 'pt-PT', 'zh-Hant', 'zh-Hant-TW', 'es-419', 'ast'] as $locale) {
+            yield $locale => [$locale];
+        }
+    }
+
+    #[DataProvider('locales')]
+    public function testLocale(string $locale): void
+    {
+        self::assertSame($locale, Guard::locale($locale, 'Locale'));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function notLocales(): iterable
+    {
+        foreach (['', 'EN', 'en_GB', 'en-gb', 'pt-pt', 'zh-hant', 'english', 'en-GB-oxendict', 'e'] as $locale) {
+            yield $locale === '' ? 'empty' : $locale => [$locale];
+        }
+    }
+
+    #[DataProvider('notLocales')]
+    public function testLocaleRefusesOtherTags(string $locale): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage(sprintf('Locale is not valid ("%s"): use a language tag such as "en-GB"', $locale));
+
+        Guard::locale($locale, 'Locale');
+    }
+
+    public function testNotNegative(): void
+    {
+        self::assertSame(0, Guard::notNegative(0, 'Count'));
+
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('Count must not be negative (-3).');
+        Guard::notNegative(-3, 'Count');
+    }
+
+    public function testUtc(): void
+    {
+        $lisbon = new DateTimeImmutable('2026-07-01T12:00:00', new DateTimeZone('Europe/Lisbon'));
+
+        $utc = Guard::utc($lisbon);
+
+        self::assertSame('2026-07-01T11:00:00+00:00', $utc->format(DATE_ATOM));
+        self::assertSame('UTC', $utc->getTimezone()->getName());
+        self::assertSame('Europe/Lisbon', $lisbon->getTimezone()->getName());
     }
 
     public function testUnique(): void

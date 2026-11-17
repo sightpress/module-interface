@@ -13,13 +13,19 @@ use SightPress\Module\Tests\Fake\ArrayCommandInput;
 use SightPress\Module\Tests\Fake\BufferedCommandOutput;
 use SightPress\Module\Tests\Fake\FakeBlockContext;
 use SightPress\Module\Tests\Fake\Module\AnnounceEventListener;
+use SightPress\Module\Tests\Fake\Labs\EchoAssistantProvider;
+use SightPress\Module\Tests\Fake\Labs\InMemorySearchBackend;
+use SightPress\Module\Tests\Fake\Labs\LabsModule;
 use SightPress\Module\Tests\Fake\Module\EventCardBlock;
+use SightPress\Module\Tests\Fake\Module\EventDescriptionTask;
 use SightPress\Module\Tests\Fake\Module\EventCatalogue;
 use SightPress\Module\Tests\Fake\Module\EventListHandler;
 use SightPress\Module\Tests\Fake\Module\EventPublished;
+use SightPress\Module\Tests\Fake\Module\EventSearchProvider;
 use SightPress\Module\Tests\Fake\Module\EventsModule;
 use SightPress\Module\Tests\Fake\Module\ImportEventsCommand;
 use SightPress\Module\Tests\Fake\Module\RequireLoginMiddleware;
+use SightPress\Module\Tests\Fake\Module\UpcomingEventsWidget;
 use SightPress\Module\Tests\Fake\Registrar\DuplicateRegistration;
 use SightPress\Module\Tests\Fake\Registrar\InMemoryModuleRegistrar;
 
@@ -39,7 +45,7 @@ final class ModuleRegistrationTest extends TestCase
         self::assertSame(['page', 'rbac'], array_map(static fn ($r): string => $r->moduleId, $manifest->requires));
         self::assertSame(['^1.0', '*'], array_map(static fn ($r): string => $r->constraint, $manifest->requires));
         self::assertFalse($manifest->required);
-        self::assertFalse($manifest->isOnForNewSites());
+        self::assertTrue($manifest->isOnForNewSites());
     }
 
     public function testModuleRegistersThroughEverySubRegistrar(): void
@@ -75,6 +81,51 @@ final class ModuleRegistrationTest extends TestCase
         self::assertSame([ImportEventsCommand::class], $registrar->commands->commands);
         self::assertSame(SettingType::Integer, $registrar->settings->settings['events.page_size']->type);
         self::assertSame(20, $registrar->settings->settings['events.page_size']->default);
+        self::assertSame([EventSearchProvider::class], $registrar->search->providers);
+        self::assertNull($registrar->search->backend);
+        self::assertSame([UpcomingEventsWidget::class], $registrar->dashboard->widgets);
+        self::assertSame([EventDescriptionTask::class], $registrar->assistant->tasks);
+        self::assertSame([], $registrar->assistant->providers);
+    }
+
+    public function testModuleCanReplaceTheSearchBackEndAndAddAnAssistantProvider(): void
+    {
+        $registrar = new InMemoryModuleRegistrar();
+        $module = new LabsModule();
+
+        $module->register($registrar);
+
+        self::assertFalse($module->manifest()->isOnForNewSites());
+        self::assertSame(InMemorySearchBackend::class, $registrar->search->backend);
+        self::assertSame([EchoAssistantProvider::class], $registrar->assistant->providers);
+
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('is already in use.');
+        $registrar->search()->useBackend(InMemorySearchBackend::class);
+    }
+
+    public function testWidgetsTasksAndProvidersRegisterOnlyOnce(): void
+    {
+        $registrar = new InMemoryModuleRegistrar();
+        $registrar->dashboard()->add(UpcomingEventsWidget::class);
+        $registrar->assistant()->addTask(EventDescriptionTask::class);
+        $registrar->assistant()->addProvider(EchoAssistantProvider::class);
+        $registrar->search()->addProvider(EventSearchProvider::class);
+
+        $attempts = [
+            'Dashboard widget' => static fn () => $registrar->dashboard()->add(UpcomingEventsWidget::class),
+            'Assistant task' => static fn () => $registrar->assistant()->addTask(EventDescriptionTask::class),
+            'Assistant provider' => static fn () => $registrar->assistant()->addProvider(EchoAssistantProvider::class),
+            'Search document provider' => static fn () => $registrar->search()->addProvider(EventSearchProvider::class),
+        ];
+        foreach ($attempts as $kind => $attempt) {
+            try {
+                $attempt();
+                self::fail($kind . ' registered twice.');
+            } catch (DuplicateRegistration $e) {
+                self::assertStringStartsWith($kind . ' "', $e->getMessage());
+            }
+        }
     }
 
     public function testEveryAdminMenuItemLinksToARegisteredRoute(): void

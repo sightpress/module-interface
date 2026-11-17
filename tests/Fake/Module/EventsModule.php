@@ -25,6 +25,7 @@ final class EventsModule implements ModuleInterface
             id: 'acme.events',
             version: '1.2.0',
             requires: [new ModuleRequirement('page', '^1.0'), new ModuleRequirement('rbac')],
+            enabledByDefault: true,
         );
     }
 
@@ -79,5 +80,11 @@ final class EventsModule implements ModuleInterface
             20,
             'How many events the events page lists before it adds a "Next page" link.',
         ));
+
+        $registrar->search()->addProvider(EventSearchProvider::class);
+
+        $registrar->dashboard()->add(UpcomingEventsWidget::class);
+
+        $registrar->assistant()->addTask(EventDescriptionTask::class);
     }
 }

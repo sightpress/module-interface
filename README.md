@@ -15,9 +15,18 @@ It is versioned on its own, with strict semantic versioning: a new major version
 - `ModuleManifest` and `ModuleRequirement`: the module's id, version, the modules it needs, and whether it is
   always on or on by default for new sites.
 - `ModuleRegistrar`: one typed sub-registrar per kind of addition: `services()`, `routes()`, `blockTypes()`,
-  `permissions()`, `migrations()`, `adminMenu()`, `views()`, `subscribers()`, `commands()` and `settings()`.
+  `permissions()`, `migrations()`, `adminMenu()`, `views()`, `subscribers()`, `commands()`, `settings()`,
+  `search()`, `dashboard()` and `assistant()`.
 - `Block\BlockType`: a content block with its schema, HTML and Markdown rendering, optional structured data and
   its accessibility checks (`A11yRule`, `A11yIssue`).
+- `Search\*`: site search. Modules turn their content into `SearchDocument`s with a `SearchDocumentProvider`; a
+  `SearchBackend` indexes them and answers a `SearchQuery` with `SearchResults`, never showing members-only
+  documents to anonymous visitors. Core dispatches a `SearchPerformed` event after each search.
+- `Dashboard\DashboardWidget`: a box on the admin dashboard, shown only to people with its permission.
+- `Assistant\*`: the optional AI assistant (off by default, bring your own key). An `AssistantProvider` turns an
+  `AssistantRequest` into an `AssistantResponse` (`StreamingAssistantProvider` can also stream it); an
+  `AssistantTask` writes the prompt and checks the answer, which is only ever an `AssistantSuggestion` that a
+  person inserts, copies or discards. Failures throw `Exception\AssistantException` with an `AssistantFailure`.
 - Value objects: `Routing\Route`, `Access\Permission`, `Admin\AdminMenuItem`, `Setting\Setting`,
   `Console\CommandParameter`; plus `Migration\MigrationProvider` and the `Console\Command` contract.
 
@@ -28,8 +37,8 @@ The value objects check their values when they are built and throw `Exception\In
 message that names the field and the rule.
 
 Interfaces that modules implement change only in a major release. Interfaces that core implements (the registrars,
-`Block\BlockContext`, `Console\CommandInput` and `Console\CommandOutput`) may gain methods in a minor release, so
-modules must not implement them.
+`Block\BlockContext`, `Console\CommandInput`, `Console\CommandOutput`, `Dashboard\DashboardContext` and
+`Assistant\AssistantContext`) may gain methods in a minor release, so modules must not implement them.
 
 ## Requirements
 
