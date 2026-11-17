@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/sightpress/module-interface/compare/0.3.0...0.4.0) (2026-11-17)
+
+
+### Features
+
+* add search, dashboard and AI assistant contracts (MI-0.4) ([#12](https://github.com/sightpress/module-interface/issues/12)) ([5e976db](https://github.com/sightpress/module-interface/commit/5e976db7520bd62401e3f36f449c4e6f4522f478))
+
 ## [0.3.0](https://github.com/sightpress/module-interface/compare/0.2.0...0.3.0) (2026-11-17)
 
 
