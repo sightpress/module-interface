@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/sightpress/module-interface/compare/0.4.0...0.4.1) (2026-11-19)
+
+
+### Documentation
+
+* add a code of conduct and a contributing guide ([#15](https://github.com/sightpress/module-interface/issues/15)) ([11934a7](https://github.com/sightpress/module-interface/commit/11934a789b6a825799ef942fb3777a816c8ee32c))
+
 ## [0.4.0](https://github.com/sightpress/module-interface/compare/0.3.0...0.4.0) (2026-11-17)
 
 
