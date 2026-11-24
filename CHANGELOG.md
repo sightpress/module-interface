@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/sightpress/module-interface/compare/0.4.1...0.5.0) (2026-11-24)
+
+
+### Features
+
+* module-interface 0.5 contracts (MI-0.5) ([#17](https://github.com/sightpress/module-interface/issues/17)) ([296795b](https://github.com/sightpress/module-interface/commit/296795b8818e7e2f28eafdb98a240586da46ee47))
+
 ## [0.4.1](https://github.com/sightpress/module-interface/compare/0.4.0...0.4.1) (2026-11-19)
 
 
