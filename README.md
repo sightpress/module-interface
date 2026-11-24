@@ -16,7 +16,7 @@ It is versioned on its own, with strict semantic versioning: a new major version
   always on or on by default for new sites.
 - `ModuleRegistrar`: one typed sub-registrar per kind of addition: `services()`, `routes()`, `blockTypes()`,
   `permissions()`, `migrations()`, `adminMenu()`, `views()`, `subscribers()`, `commands()`, `settings()`,
-  `search()`, `dashboard()` and `assistant()`.
+  `search()`, `dashboard()`, `assistant()`, `seo()`, `sms()`, `schedule()` and `translations()`.
 - `Block\BlockType`: a content block with its schema, HTML and Markdown rendering, optional structured data and
   its accessibility checks (`A11yRule`, `A11yIssue`).
 - `Search\*`: site search. Modules turn their content into `SearchDocument`s with a `SearchDocumentProvider`; a
@@ -27,7 +27,22 @@ It is versioned on its own, with strict semantic versioning: a new major version
   `AssistantRequest` into an `AssistantResponse` (`StreamingAssistantProvider` can also stream it); an
   `AssistantTask` writes the prompt and checks the answer, which is only ever an `AssistantSuggestion` that a
   person inserts, copies or discards. Failures throw `Exception\AssistantException` with an `AssistantFailure`.
-- Value objects: `Routing\Route`, `Access\Permission`, `Admin\AdminMenuItem`, `Setting\Setting`,
+- `Event\*`: the stable list of events core dispatches (pages, media, menus, accounts, roles, settings, modules,
+  themes …). They carry ids and plain values, never core objects, so modules can listen to them without
+  depending on core.
+- `Http\Screens`, `Http\AdminScreen`, `Http\PublicScreen`, `Text\Message`: render a module's admin screens and
+  public pages inside the admin panel or the site's theme, with translated titles and notices.
+- `Access\Viewer`, `Site\SiteInfo`, `Setting\SettingValues`, `Audit\AuditTrail`: who is asking, which site,
+  the site's settings, and the audit log.
+- `Seo\SeoProvider` and `Seo\SeoEntry`: a module's public pages in the sitemap, `llms.txt` and JSON-LD.
+- `Schedule\ScheduledJob`: background work done by `schedule:run`.
+- `Block\StyledBlockType`, `BlockStyles`, `BlockVariant`, `BlockOption`, `BlockIcon`: style variants, shared
+  options (alignment, background, width, spacing, form layout) and icons.
+- `Sms\*`: optional text messages. An `SmsProvider` sends an `SmsMessage` to a `PhoneNumber` (E.164, masked
+  everywhere) and looks numbers up; `SmsWebhooks` reads delivery receipts and STOP replies. Failures throw
+  `Exception\SmsException` with an `SmsFailure`.
+- Value objects: `Routing\Route` (with an optional `permission` that core checks and a `critical` flag for
+  two-step confirmation), `Access\Permission`, `Admin\AdminMenuItem`, `Setting\Setting`,
   `Console\CommandParameter`; plus `Migration\MigrationProvider` and the `Console\Command` contract.
 
 `Access\Permission::$allowedOnSignUp` (default `false`) marks the permissions that a role given to people who
@@ -37,8 +52,8 @@ The value objects check their values when they are built and throw `Exception\In
 message that names the field and the rule.
 
 Interfaces that modules implement change only in a major release. Interfaces that core implements (the registrars,
-`Block\BlockContext`, `Console\CommandInput`, `Console\CommandOutput`, `Dashboard\DashboardContext` and
-`Assistant\AssistantContext`) may gain methods in a minor release, so modules must not implement them.
+`Block\BlockContext`, `Console\CommandInput`, `Console\CommandOutput`, `Dashboard\DashboardContext`,
+`Assistant\AssistantContext`, `Http\Screens`, `Setting\SettingValues` and `Audit\AuditTrail`) may gain methods in a minor release, so modules must not implement them.
 
 ## Requirements
 

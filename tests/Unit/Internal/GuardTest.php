@@ -142,4 +142,52 @@ final class GuardTest extends TestCase
         $this->expectExceptionMessage('Field[0] must be a string.');
         Guard::listOfStrings([1], 'Field');
     }
+
+    public function testListOfIds(): void
+    {
+        self::assertSame([0, 4], Guard::listOfIds([0, 4], 'Field'));
+    }
+
+    public function testListOfIdsRefusesAMap(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('Field must be a list.');
+        Guard::listOfIds(['a' => 1], 'Field');
+    }
+
+    public function testListOfIdsRefusesNegativeOrOtherValues(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('Field[1] must be an id (a whole number, 0 or more).');
+        Guard::listOfIds([1, -1], 'Field');
+    }
+
+    public function testTemplateContextStatusAndCountry(): void
+    {
+        self::assertSame('@acme_events/admin/list.html.twig', Guard::template('@acme_events/admin/list.html.twig'));
+        self::assertSame(['events' => [], '_x1' => 1], Guard::context(['events' => [], '_x1' => 1]));
+        self::assertSame(200, Guard::status(200));
+        self::assertSame(599, Guard::status(599));
+        self::assertSame('GB', Guard::country('gb'));
+    }
+
+    public function testStatusRefusesInformationalAndRedirects(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        Guard::status(199);
+    }
+
+    public function testStatusRefusesRedirects(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('HTTP status must be 2xx, 4xx or 5xx (301)');
+        Guard::status(301);
+    }
+
+    public function testContextRefusesNamesThatAreNotWords(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('Template variable names must be words such as "events" ("a-b").');
+        Guard::context(['a-b' => 1]);
+    }
 }

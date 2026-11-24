@@ -7,6 +7,8 @@ namespace SightPress\Module\Tests\Unit\Contract;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use SightPress\Module\Block\A11ySeverity;
+use SightPress\Module\Block\BlockIcon;
+use SightPress\Module\Block\BlockVariant;
 use SightPress\Module\Console\Command;
 use SightPress\Module\Setting\SettingType;
 use SightPress\Module\Tests\Fake\ArrayCommandInput;
@@ -16,6 +18,9 @@ use SightPress\Module\Tests\Fake\Module\AnnounceEventListener;
 use SightPress\Module\Tests\Fake\Labs\EchoAssistantProvider;
 use SightPress\Module\Tests\Fake\Labs\InMemorySearchBackend;
 use SightPress\Module\Tests\Fake\Labs\LabsModule;
+use SightPress\Module\Tests\Fake\Labs\TestSmsProvider;
+use SightPress\Module\Tests\Fake\Module\EventReminderJob;
+use SightPress\Module\Tests\Fake\Module\EventSeoProvider;
 use SightPress\Module\Tests\Fake\Module\EventCardBlock;
 use SightPress\Module\Tests\Fake\Module\EventDescriptionTask;
 use SightPress\Module\Tests\Fake\Module\EventCatalogue;
@@ -60,11 +65,14 @@ final class ModuleRegistrationTest extends TestCase
         self::assertFalse($registrar->services->services['acme.events.clock']['public']);
         self::assertNotNull($registrar->services->services['acme.events.clock']['factory']);
 
-        self::assertSame(['events.index', 'admin.events.edit'], array_keys($registrar->routes->routes));
+        self::assertSame(['events.index', 'admin.events.edit', 'admin.events.delete'], array_keys($registrar->routes->routes));
         $edit = $registrar->routes->routes['admin.events.edit'];
         self::assertSame(EventListHandler::class, $edit->handler);
         self::assertSame(['GET', 'POST'], $edit->methods);
         self::assertSame([RequireLoginMiddleware::class], $edit->middleware);
+        self::assertSame('events.manage', $edit->permission);
+        self::assertFalse($edit->critical);
+        self::assertTrue($registrar->routes->routes['admin.events.delete']->critical);
 
         self::assertSame([EventCardBlock::class], $registrar->blockTypes->blockTypes);
         self::assertSame(['admin'], $registrar->permissions->permissions['events.manage']->defaultRoles);
@@ -86,6 +94,13 @@ final class ModuleRegistrationTest extends TestCase
         self::assertSame([UpcomingEventsWidget::class], $registrar->dashboard->widgets);
         self::assertSame([EventDescriptionTask::class], $registrar->assistant->tasks);
         self::assertSame([], $registrar->assistant->providers);
+        self::assertSame([EventSeoProvider::class], $registrar->seo->providers);
+        self::assertSame([EventReminderJob::class], $registrar->schedule->jobs);
+        self::assertSame([], $registrar->sms->providers);
+        self::assertCount(1, $registrar->translations->directories);
+        self::assertFileExists($registrar->translations->directories[0] . '/acme_events.en-GB.xlf');
+        self::assertSame('Ticket', $registrar->blockTypes->variants['quote']['ticket']->label);
+        self::assertFileExists($registrar->blockTypes->icons['eventbrite']->svgFile);
     }
 
     public function testModuleCanReplaceTheSearchBackEndAndAddAnAssistantProvider(): void
@@ -98,6 +113,7 @@ final class ModuleRegistrationTest extends TestCase
         self::assertFalse($module->manifest()->isOnForNewSites());
         self::assertSame(InMemorySearchBackend::class, $registrar->search->backend);
         self::assertSame([EchoAssistantProvider::class], $registrar->assistant->providers);
+        self::assertSame([TestSmsProvider::class], $registrar->sms->providers);
 
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('is already in use.');
@@ -111,12 +127,24 @@ final class ModuleRegistrationTest extends TestCase
         $registrar->assistant()->addTask(EventDescriptionTask::class);
         $registrar->assistant()->addProvider(EchoAssistantProvider::class);
         $registrar->search()->addProvider(EventSearchProvider::class);
+        $registrar->seo()->addProvider(EventSeoProvider::class);
+        $registrar->sms()->addProvider(TestSmsProvider::class);
+        $registrar->schedule()->add(EventReminderJob::class);
+        $registrar->translations()->add('/srv/translations');
+        $registrar->blockTypes()->addVariant('quote', new BlockVariant('card', 'Card'));
+        $registrar->blockTypes()->addIcon(new BlockIcon('rss', 'RSS', '/rss.svg'));
 
         $attempts = [
             'Dashboard widget' => static fn () => $registrar->dashboard()->add(UpcomingEventsWidget::class),
             'Assistant task' => static fn () => $registrar->assistant()->addTask(EventDescriptionTask::class),
             'Assistant provider' => static fn () => $registrar->assistant()->addProvider(EchoAssistantProvider::class),
             'Search document provider' => static fn () => $registrar->search()->addProvider(EventSearchProvider::class),
+            'SEO provider' => static fn () => $registrar->seo()->addProvider(EventSeoProvider::class),
+            'Text message provider' => static fn () => $registrar->sms()->addProvider(TestSmsProvider::class),
+            'Scheduled job' => static fn () => $registrar->schedule()->add(EventReminderJob::class),
+            'Translation folder' => static fn () => $registrar->translations()->add('/srv/translations'),
+            'Block variant' => static fn () => $registrar->blockTypes()->addVariant('quote', new BlockVariant('card', 'Card')),
+            'Icon' => static fn () => $registrar->blockTypes()->addIcon(new BlockIcon('rss', 'RSS', '/rss.svg')),
         ];
         foreach ($attempts as $kind => $attempt) {
             try {

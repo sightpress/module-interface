@@ -27,6 +27,33 @@ final class RouteTest extends TestCase
         self::assertSame(EventListHandler::class, $route->handler);
         self::assertSame(['GET'], $route->methods);
         self::assertSame([], $route->middleware);
+        self::assertNull($route->permission);
+        self::assertFalse($route->critical);
+    }
+
+    public function testPermissionAndCritical(): void
+    {
+        $route = new Route('events.delete', '/admin/events/{id}/delete', EventListHandler::class, ['POST'], permission: 'events.manage', critical: true);
+
+        self::assertSame('events.manage', $route->permission);
+        self::assertTrue($route->critical);
+        self::assertTrue(new Route('e', '/e', EventListHandler::class, ['GET', 'DELETE'], critical: true)->critical);
+    }
+
+    public function testRefusesABadPermission(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('Permission of route "e" is not valid ("Manage events")');
+
+        new Route('e', '/e', EventListHandler::class, permission: 'Manage events');
+    }
+
+    public function testACriticalRouteMustChangeSomething(): void
+    {
+        $this->expectException(InvalidValueException::class);
+        $this->expectExceptionMessage('Route "e" is marked critical but only answers GET, HEAD');
+
+        new Route('e', '/e', EventListHandler::class, ['GET', 'HEAD'], critical: true);
     }
 
     public function testAllFields(): void

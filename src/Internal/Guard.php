@@ -137,4 +137,78 @@ final class Guard
         /** @var list<string> $values */
         return $values;
     }
+
+    /**
+     * @param array<mixed> $values
+     *
+     * @return list<int<0, max>>
+     */
+    public static function listOfIds(array $values, string $field): array
+    {
+        if (!array_is_list($values)) {
+            throw new InvalidValueException(sprintf('%s must be a list.', $field));
+        }
+
+        foreach ($values as $index => $value) {
+            if (!is_int($value) || $value < 0) {
+                throw new InvalidValueException(sprintf('%s[%d] must be an id (a whole number, 0 or more).', $field, $index));
+            }
+        }
+
+        /** @var list<int<0, max>> $values */
+        return $values;
+    }
+
+    /**
+     * A template of a module, in its view namespace.
+     *
+     * @return non-empty-string
+     */
+    public static function template(string $template): string
+    {
+        return self::matches(
+            $template,
+            '#^@[a-z][a-z0-9_]*/(?!.*\.\./)\S+\.twig$#',
+            'Template',
+            'use a template of the module\'s view namespace, for example "@acme_events/list.html.twig"',
+        );
+    }
+
+    /**
+     * Template variables: keyed by name.
+     *
+     * @param array<mixed> $context
+     *
+     * @return array<string, mixed>
+     */
+    public static function context(array $context): array
+    {
+        foreach (array_keys($context) as $name) {
+            if (!is_string($name) || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name) !== 1) {
+                throw new InvalidValueException(sprintf('Template variable names must be words such as "events" ("%s").', $name));
+            }
+        }
+
+        /** @var array<string, mixed> $context */
+        return $context;
+    }
+
+    public static function status(int $status): int
+    {
+        if ($status < 200 || $status > 599 || ($status >= 300 && $status < 400)) {
+            throw new InvalidValueException(sprintf('HTTP status must be 2xx, 4xx or 5xx (%d): redirect with Screens::redirect().', $status));
+        }
+
+        return $status;
+    }
+
+    /**
+     * An ISO 3166-1 alpha-2 country code, upper-cased.
+     *
+     * @return non-empty-string
+     */
+    public static function country(string $country): string
+    {
+        return self::matches(strtoupper($country), '/^[A-Z]{2}$/', 'Country', 'use a two-letter ISO 3166-1 code such as "GB"');
+    }
 }

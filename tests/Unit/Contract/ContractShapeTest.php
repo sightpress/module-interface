@@ -37,9 +37,42 @@ use SightPress\Module\Search\SearchIndexStatus;
 use SightPress\Module\Search\SearchPerformed;
 use SightPress\Module\Search\SearchQuery;
 use SightPress\Module\Search\SearchResults;
+use SightPress\Module\Access\Viewer;
+use SightPress\Module\Audit\AuditRecord;
+use SightPress\Module\Audit\AuditTrail;
+use SightPress\Module\Block\BlockIcon;
+use SightPress\Module\Block\BlockStyles;
+use SightPress\Module\Block\BlockVariant;
+use SightPress\Module\Block\StyledBlockType;
+use SightPress\Module\Event\PageTransitioned;
+use SightPress\Module\Http\AdminScreen;
+use SightPress\Module\Http\PublicScreen;
+use SightPress\Module\Http\Screens;
+use SightPress\Module\Registrar\BlockTypeRegistrar;
+use SightPress\Module\Registrar\ScheduleRegistrar;
+use SightPress\Module\Registrar\SeoRegistrar;
+use SightPress\Module\Registrar\SmsRegistrar;
+use SightPress\Module\Registrar\TranslationRegistrar;
+use SightPress\Module\Routing\Route;
+use SightPress\Module\Schedule\ScheduledJob;
+use SightPress\Module\Seo\SeoEntry;
+use SightPress\Module\Seo\SeoProvider;
+use SightPress\Module\Setting\SettingValues;
+use SightPress\Module\Site\SiteInfo;
+use SightPress\Module\Sms\PhoneLookupResult;
+use SightPress\Module\Sms\PhoneNumber;
+use SightPress\Module\Sms\SmsCapabilities;
+use SightPress\Module\Sms\SmsConnection;
+use SightPress\Module\Sms\SmsMessage;
+use SightPress\Module\Sms\SmsOptChange;
+use SightPress\Module\Sms\SmsProvider;
+use SightPress\Module\Sms\SmsReceipt;
+use SightPress\Module\Sms\SmsResult;
+use SightPress\Module\Sms\SmsWebhooks;
+use SightPress\Module\Text\Message;
 
 /**
- * Pins the shape of the 0.4 contracts, so a change shows up in review: adding a constructor argument at the end
+ * Pins the shape of the 0.4 and 0.5 contracts, so a change shows up in review: adding a constructor argument at the end
  * (with a default) or a method to a core-implemented interface is a minor release; renaming, reordering or
  * removing anything, or adding a method to an interface that modules implement, is a major one.
  */
@@ -65,6 +98,26 @@ final class ContractShapeTest extends TestCase
         yield 'AssistantSuggestion' => [AssistantSuggestion::class, ['text', '?fields']];
         yield 'TokenUsage' => [TokenUsage::class, ['?inputTokens', '?outputTokens']];
         yield 'ProviderCapabilities' => [ProviderCapabilities::class, ['?vision', '?streaming']];
+        yield 'SeoEntry' => [SeoEntry::class, ['path', 'locale', 'title', 'updatedAt', '?description', '?markdownPath', '?alternates', '?structuredData']];
+        yield 'AdminScreen' => [AdminScreen::class, ['title', 'template', '?context', '?status']];
+        yield 'PublicScreen' => [PublicScreen::class, ['title', 'template', '?context', '?status', '?seo', '?noindex']];
+        yield 'Message' => [Message::class, ['text', '?parameters', '?domain']];
+        yield 'Viewer' => [Viewer::class, ['userId', '?permissions']];
+        yield 'SiteInfo' => [SiteInfo::class, ['id', 'slug', 'name', 'defaultLocale', 'locales']];
+        yield 'AuditRecord' => [AuditRecord::class, ['action', 'summary', '?actorId', '?subjectType', '?subjectId', '?details']];
+        yield 'BlockVariant' => [BlockVariant::class, ['name', 'label']];
+        yield 'BlockStyles' => [BlockStyles::class, ['?variants', '?options', '?shortForm']];
+        yield 'BlockIcon' => [BlockIcon::class, ['name', 'label', 'svgFile', '?hosts', '?brandColour']];
+        yield 'PhoneNumber' => [PhoneNumber::class, ['e164']];
+        yield 'SmsMessage' => [SmsMessage::class, ['to', 'text', '?purpose', '?reference']];
+        yield 'SmsResult' => [SmsResult::class, ['messageId', '?parts']];
+        yield 'PhoneLookupResult' => [PhoneLookupResult::class, ['valid', '?lineType', '?country']];
+        yield 'SmsCapabilities' => [SmsCapabilities::class, ['?lookup', '?deliveryReceipts', '?optOutReplies', '?alphanumericSender', '?countries']];
+        yield 'SmsConnection' => [SmsConnection::class, ['key', '?account', '?region', '?sender']];
+        yield 'SmsReceipt' => [SmsReceipt::class, ['messageId', 'status', 'at', '?reason']];
+        yield 'SmsOptChange' => [SmsOptChange::class, ['from', 'stopped', 'at']];
+        yield 'Route' => [Route::class, ['name', 'path', 'handler', '?methods', '?middleware', '?permission', '?critical']];
+        yield 'PageTransitioned' => [PageTransitioned::class, ['pageId', 'transition', 'from', 'to', 'actorId', '?comment']];
     }
 
     /**
@@ -107,6 +160,19 @@ final class ContractShapeTest extends TestCase
         yield 'AssistantTask' => [AssistantTask::class, ['id(): string', 'label(): string', 'permission(): string', 'inputSchema(): array', 'needsVision(): bool', 'buildPrompt(input, context): array', 'validateOutput(response, input, context): SightPress\Module\Assistant\AssistantSuggestion']];
         yield 'AssistantContext' => [AssistantContext::class, ['locale(): string', 'can(permission): bool', 'screen(): ?string']];
         yield 'AssistantRegistrar' => [AssistantRegistrar::class, ['addProvider(provider): void', 'addTask(task): void']];
+        yield 'SeoProvider' => [SeoProvider::class, ['entries(locale): iterable']];
+        yield 'SeoRegistrar' => [SeoRegistrar::class, ['addProvider(provider): void']];
+        yield 'Screens' => [Screens::class, ['admin(request, screen): Psr\Http\Message\ResponseInterface', 'public(request, screen): Psr\Http\Message\ResponseInterface', 'redirect(request, path, ?notice): Psr\Http\Message\ResponseInterface']];
+        yield 'SettingValues' => [SettingValues::class, ['get(key): string|int|bool|null']];
+        yield 'AuditTrail' => [AuditTrail::class, ['record(record): void']];
+        yield 'ScheduledJob' => [ScheduledJob::class, ['run(run): void']];
+        yield 'ScheduleRegistrar' => [ScheduleRegistrar::class, ['add(job): void']];
+        yield 'TranslationRegistrar' => [TranslationRegistrar::class, ['add(directory): void']];
+        yield 'StyledBlockType' => [StyledBlockType::class, ['styles(): SightPress\Module\Block\BlockStyles']];
+        yield 'BlockTypeRegistrar' => [BlockTypeRegistrar::class, ['add(blockType): void', 'addVariant(blockType, variant): void', 'addIcon(icon): void']];
+        yield 'SmsProvider' => [SmsProvider::class, ['id(): string', 'label(): string', 'description(): string', 'capabilities(): SightPress\Module\Sms\SmsCapabilities', 'send(message, connection): SightPress\Module\Sms\SmsResult', 'lookup(number, connection): SightPress\Module\Sms\PhoneLookupResult']];
+        yield 'SmsWebhooks' => [SmsWebhooks::class, ['readWebhook(request, connection): array']];
+        yield 'SmsRegistrar' => [SmsRegistrar::class, ['addProvider(provider): void']];
     }
 
     /**
@@ -130,7 +196,16 @@ final class ContractShapeTest extends TestCase
     {
         $registrar = new ReflectionClass(ModuleRegistrar::class);
 
-        foreach (['search' => SearchRegistrar::class, 'dashboard' => DashboardRegistrar::class, 'assistant' => AssistantRegistrar::class] as $method => $type) {
+        $subRegistrars = [
+            'search' => SearchRegistrar::class,
+            'dashboard' => DashboardRegistrar::class,
+            'assistant' => AssistantRegistrar::class,
+            'seo' => SeoRegistrar::class,
+            'sms' => SmsRegistrar::class,
+            'schedule' => ScheduleRegistrar::class,
+            'translations' => TranslationRegistrar::class,
+        ];
+        foreach ($subRegistrars as $method => $type) {
             $returnType = $registrar->getMethod($method)->getReturnType();
             self::assertInstanceOf(ReflectionNamedType::class, $returnType);
             self::assertSame($type, $returnType->getName());

@@ -12,10 +12,14 @@ use SightPress\Module\Registrar\DashboardRegistrar;
 use SightPress\Module\Registrar\MigrationRegistrar;
 use SightPress\Module\Registrar\PermissionRegistrar;
 use SightPress\Module\Registrar\RouteRegistrar;
+use SightPress\Module\Registrar\ScheduleRegistrar;
 use SightPress\Module\Registrar\SearchRegistrar;
+use SightPress\Module\Registrar\SeoRegistrar;
 use SightPress\Module\Registrar\ServiceRegistrar;
 use SightPress\Module\Registrar\SettingRegistrar;
+use SightPress\Module\Registrar\SmsRegistrar;
 use SightPress\Module\Registrar\SubscriberRegistrar;
+use SightPress\Module\Registrar\TranslationRegistrar;
 use SightPress\Module\Registrar\ViewRegistrar;
 
 /**
@@ -55,4 +59,16 @@ interface ModuleRegistrar
 
     /** AI assistant providers and tasks (since 0.4). */
     public function assistant(): AssistantRegistrar;
+
+    /** Public pages for the sitemap and `llms.txt` (since 0.5). */
+    public function seo(): SeoRegistrar;
+
+    /** Text message (SMS) providers (since 0.5). */
+    public function sms(): SmsRegistrar;
+
+    /** Background work for `schedule:run` (since 0.5). */
+    public function schedule(): ScheduleRegistrar;
+
+    /** Translations of the module's interface text (since 0.5). */
+    public function translations(): TranslationRegistrar;
 }

@@ -5,10 +5,21 @@ declare(strict_types=1);
 namespace SightPress\Module\Tests\Fake\Module;
 
 use SightPress\Module\Block\BlockContext;
-use SightPress\Module\Block\BlockType;
+use SightPress\Module\Block\BlockOption;
+use SightPress\Module\Block\BlockStyles;
+use SightPress\Module\Block\BlockVariant;
+use SightPress\Module\Block\StyledBlockType;
 
-final class EventCardBlock implements BlockType
+final class EventCardBlock implements StyledBlockType
 {
+    public function styles(): BlockStyles
+    {
+        return new BlockStyles(
+            [new BlockVariant('plain', 'Plain'), new BlockVariant('card', 'Card')],
+            [BlockOption::Align, BlockOption::Background, BlockOption::Spacing],
+        );
+    }
+
     public function name(): string
     {
         return 'acme.event_card';

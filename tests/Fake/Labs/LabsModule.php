@@ -23,5 +23,6 @@ final class LabsModule implements ModuleInterface
     {
         $registrar->search()->useBackend(InMemorySearchBackend::class);
         $registrar->assistant()->addProvider(EchoAssistantProvider::class);
+        $registrar->sms()->addProvider(TestSmsProvider::class);
     }
 }

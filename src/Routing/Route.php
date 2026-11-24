@@ -12,8 +12,9 @@ use SightPress\Module\Internal\Guard;
 /**
  * One HTTP route: a path, the methods it answers and the PSR-15 handler that answers it.
  *
- * Handlers must return complete, accessible pages (WCAG 2.2 AA) and must check permissions themselves or through
- * middleware; a route has no access rule of its own.
+ * Handlers must return complete, accessible pages (WCAG 2.2 AA). Give a route a `permission` and core checks it
+ * before the handler runs (since 0.5); without one, the handler checks access itself
+ * ({@see \SightPress\Module\Access\Viewer}).
  */
 final readonly class Route
 {
@@ -32,6 +33,11 @@ final readonly class Route
     /** @var list<class-string<MiddlewareInterface>> */
     public array $middleware;
 
+    /** @var non-empty-string|null */
+    public ?string $permission;
+
+    public bool $critical;
+
     /**
      * @param string                                  $name       unique route name, used to build URLs, for
      *                                                            example `events.show`
@@ -40,6 +46,17 @@ final readonly class Route
      * @param class-string<RequestHandlerInterface>   $handler    built from the site's container
      * @param list<string>                            $methods    upper-case HTTP methods, `GET` by default
      * @param list<class-string<MiddlewareInterface>> $middleware run in the given order before the handler
+     * @param string|null                             $permission needed to use the route (since 0.5): a signed-out
+     *                                                            visitor is sent to the sign-in page and back, and
+     *                                                            anyone else without it gets core's "no access" page.
+     *                                                            Paths under `/admin` also need `admin.access`, as
+     *                                                            core's own admin screens do
+     * @param bool                                    $critical   the route makes an important change (deletes data,
+     *                                                            changes access or security), so sites with two-step
+     *                                                            confirmation ask for a code before it runs (since
+     *                                                            0.5). Needs a method that changes something (`POST`,
+     *                                                            `PUT`, `PATCH` or `DELETE`); `GET` requests are never
+     *                                                            held up
      */
     public function __construct(
         string $name,
@@ -47,6 +64,8 @@ final readonly class Route
         string $handler,
         array $methods = ['GET'],
         array $middleware = [],
+        ?string $permission = null,
+        bool $critical = false,
     ) {
         $this->name = Guard::matches(
             $name,
@@ -86,5 +105,20 @@ final readonly class Route
             Guard::notBlank($class, sprintf('Middleware of route "%s"', $name));
         }
         $this->middleware = $middleware;
+
+        $this->permission = $permission === null ? null : Guard::matches(
+            $permission,
+            Guard::DOTTED_NAME,
+            sprintf('Permission of route "%s"', $name),
+            'use a permission name such as "events.manage"',
+        );
+        if ($critical && array_intersect($checked, ['POST', 'PUT', 'PATCH', 'DELETE']) === []) {
+            throw new InvalidValueException(sprintf(
+                'Route "%s" is marked critical but only answers %s: a critical route must change something (POST, PUT, PATCH or DELETE).',
+                $name,
+                implode(', ', $checked),
+            ));
+        }
+        $this->critical = $critical;
     }
 }

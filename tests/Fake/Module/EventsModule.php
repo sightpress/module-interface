@@ -6,6 +6,8 @@ namespace SightPress\Module\Tests\Fake\Module;
 
 use SightPress\Module\Access\Permission;
 use SightPress\Module\Admin\AdminMenuItem;
+use SightPress\Module\Block\BlockIcon;
+use SightPress\Module\Block\BlockVariant;
 use SightPress\Module\ModuleInterface;
 use SightPress\Module\ModuleManifest;
 use SightPress\Module\ModuleRegistrar;
@@ -44,9 +46,20 @@ final class EventsModule implements ModuleInterface
             EventListHandler::class,
             ['GET', 'POST'],
             [RequireLoginMiddleware::class],
+            permission: 'events.manage',
+        ));
+        $registrar->routes()->add(new Route(
+            'admin.events.delete',
+            '/admin/events/{id}/delete',
+            EventAdminHandler::class,
+            ['POST'],
+            permission: 'events.manage',
+            critical: true,
         ));
 
         $registrar->blockTypes()->add(EventCardBlock::class);
+        $registrar->blockTypes()->addVariant('quote', new BlockVariant('ticket', 'Ticket'));
+        $registrar->blockTypes()->addIcon(new BlockIcon('eventbrite', 'Eventbrite', __DIR__ . '/icons/eventbrite.svg', ['eventbrite.com', 'eventbrite.co.uk'], '#f05537'));
 
         $registrar->permissions()->add(new Permission('events.manage', 'Manage events', defaultRoles: ['admin']));
         $registrar->permissions()->add(new Permission(
@@ -86,5 +99,9 @@ final class EventsModule implements ModuleInterface
         $registrar->dashboard()->add(UpcomingEventsWidget::class);
 
         $registrar->assistant()->addTask(EventDescriptionTask::class);
+
+        $registrar->seo()->addProvider(EventSeoProvider::class);
+        $registrar->schedule()->add(EventReminderJob::class);
+        $registrar->translations()->add(__DIR__ . '/translations');
     }
 }

@@ -1,4 +1,4 @@
-# Module contracts (0.4)
+# Module contracts (0.5)
 
 ## What it does
 
@@ -28,6 +28,12 @@ settings, admin menu entries). No permissions are needed to use the package itse
 | `search()`       | site search documents, or a replacement back-end (0.4)   | `Search\SearchDocumentProvider`, `Search\SearchBackend` class names |
 | `dashboard()`    | admin dashboard widgets (0.4)                            | `Dashboard\DashboardWidget` class name     |
 | `assistant()`    | AI assistant providers and tasks (0.4)                   | `Assistant\AssistantProvider`, `Assistant\AssistantTask` class names |
+| `seo()`          | public pages for the sitemap, `llms.txt` and JSON-LD (0.5) | `Seo\SeoProvider` class name             |
+| `sms()`          | text message providers (0.5)                             | `Sms\SmsProvider` class name               |
+| `schedule()`     | background work for `schedule:run` (0.5)                 | `Schedule\ScheduledJob` class name         |
+| `translations()` | XLIFF translations in the module's own domain (0.5)      | folder of `<domain>.<locale>.xlf` files    |
+
+`blockTypes()` also takes `addVariant()` (a variant for another block type) and `addIcon()` (0.5).
 
 ## Manifest
 
@@ -84,6 +90,66 @@ locale, time zone, `can()` and `url()` for named routes.
 - Providers report failures with `AssistantException` and an `AssistantFailure` (invalid key, quota, rate
   limit, timeout, model unavailable, refused, unavailable); messages never contain the key, prompt or answer.
 
+## Events (0.5)
+
+Core dispatches the classes in `SightPress\Module\Event` (part of the 1.0 API): `PageCreated`, `PageSaved`,
+`PageMoved`, `PageTransitioned` (with `published()` / `unpublished()`), `PageCloned`, `PagePurged`,
+`PageScheduled`, `ScheduledStepFailed`, `RevisionRestored`, `TranslationPublished`, `RedirectChanged`,
+`MediaUploaded`, `MediaChanged`, `MediaDeleted`, `MenuChanged`, `AccountRegistered`, `AccountChanged`,
+`RoleChanged`, `SettingsChanged`, `LocaleRemoved`, `SiteModuleChanged`, `ThemeApplied`, `ThemeColoursChanged`,
+`AnalyticsDataDeleted`, `AssistantUsed`, plus `Search\SearchPerformed`. They carry ids and plain values (workflow
+steps and states as strings, listed in constants), never personal data such as email addresses. Listen with
+`subscribers()->listen(PageTransitioned::class, MyListener::class)`.
+
+## Screens, access and site services (0.5)
+
+From the site's container, in a handler's constructor:
+
+- `Http\Screens`: `admin()` renders an `AdminScreen` (title, a template of the module, variables, status) inside
+  the admin panel; `public()` renders a `PublicScreen` in the site's theme, with its `SeoEntry` for the head;
+  `redirect()` sends a `303` with an optional notice. Titles and notices are text or a `Text\Message` (translated
+  by core, with `{name}` placeholders and the module's own domain).
+- `Access\Viewer::fromRequest($request)`: the signed-in account id and `can('events.manage')`.
+- `Site\SiteInfo`: id, slug, name, default locale, locales.
+- `Setting\SettingValues::get('events.page_size')`: typed value or default.
+- `Audit\AuditTrail::record(new AuditRecord('acme.events.event_deleted', 'Deleted …', $viewer->userId))`.
+
+Routes: `new Route(…, permission: 'events.manage')` makes core check sign-in and the permission (plus
+`admin.access` under `/admin`); `critical: true` on a `POST` route asks for two-step confirmation where the site
+has it. Templates use core's template functions (`t()`, `can()`, `csrf_fields()`, `current_locale()`,
+`user_date`), and every `POST` form prints `{{ csrf_fields() }}`.
+
+## SEO, scheduled jobs and translations (0.5)
+
+- `SeoProvider::entries($locale)` lists public, indexable pages as `SeoEntry`: path, locale, title, `updatedAt`
+  (UTC), description, Markdown path (`.md`), alternates (locale → path) and schema.org nodes (each with
+  `@type`). Core leaves them out on members-only sites, outside production and when the module is off.
+- `ScheduledJob::run(ScheduleRun $run)`: use `$run->now`, report with `$run->report()`, never do anything twice.
+- Translations: `translations()->add(__DIR__ . '/../translations')` with `acme_events.en-GB.xlf` and others; the
+  `messages` domain is core's.
+
+## Blocks: variants, options and icons (0.5)
+
+A block type that implements `StyledBlockType` returns `BlockStyles`: its variants (`BlockVariant`, default
+first), the shared `BlockOption`s it offers (`align`, `background`, `width`, `spacing`, `form_layout`,
+`form_size`, `button_align`, each with its values, default first) and whether it is a short form (allows the
+`inline` layout). Core stores the choices per block and draws them as classes. `BlockIcon`: name, label, SVG
+file, hosts and an optional brand colour (`#rrggbb`).
+
+## Text messages (0.5)
+
+- `SmsProvider`: id, label, description (who runs it, where, how long data is kept), `capabilities()`
+  (`SmsCapabilities`: lookup, delivery receipts, STOP replies, alphanumeric sender, countries), `send()` →
+  `SmsResult` (message id, parts) and `lookup()` → `PhoneLookupResult` (valid, `PhoneLineType`, country).
+  Optional `SmsWebhooks::readWebhook()` checks the signature and returns `SmsReceipt`s and `SmsOptChange`s.
+- `PhoneNumber` holds E.164 only and shows `masked()` (`+44•••••••123`) in dumps; it can't be serialised and its
+  errors never contain the number. `SmsConnection` holds the key (masked, not serialisable), account, region and
+  sender. `SmsMessage` works out GSM-7 or UCS-2, length and parts (at most 6), and refuses links in a
+  `SmsPurpose::SecurityCode` message.
+- Failures: `SmsException` with `SmsFailure` (invalid key or number, unsupported country, opted out, no credit,
+  rate limited, timeout, unsupported, invalid signature, unavailable).
+- `Notification\NotificationChannel`: `email` or `sms`.
+
 ## Accessibility
 
 - `BlockType::render()` must meet WCAG 2.2 AA and escape output; `renderMarkdown()` gives a text alternative
@@ -101,9 +167,11 @@ locale, time zone, `can()` and `url()` for named routes.
 
 Interfaces that modules implement (`ModuleInterface`, `BlockType`, `A11yRule`, `Command`, `MigrationProvider`,
 `SearchDocumentProvider`, `SearchBackend`, `DashboardWidget`, `AssistantProvider`, `StreamingAssistantProvider`,
-`AssistantTask`) only change in a major release. Interfaces that core implements (`ModuleRegistrar`, the
-sub-registrars, `BlockContext`, `CommandInput`, `CommandOutput`, `DashboardContext`, `AssistantContext`) may gain
-methods in a minor release. `tests/Unit/Contract/ContractShapeTest.php` pins the 0.4 shapes.
+`AssistantTask`, `SeoProvider`, `ScheduledJob`, `StyledBlockType`, `SmsProvider`, `SmsWebhooks`) only change in a
+major release. Interfaces that core implements (`ModuleRegistrar`, the
+sub-registrars, `BlockContext`, `CommandInput`, `CommandOutput`, `DashboardContext`, `AssistantContext`, `Screens`,
+`SettingValues`, `AuditTrail`) may gain methods in a minor release. `tests/Unit/Contract/ContractShapeTest.php`
+pins the 0.4 and 0.5 shapes.
 
 ## Code and tests
 
