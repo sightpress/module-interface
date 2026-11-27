@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/sightpress/module-interface/compare/0.5.0...0.6.0) (2026-11-27)
+
+
+### Features
+
+* module-interface 0.6 contracts: privacy, placeholders, code languages and locale formats (MI-0.6) ([#19](https://github.com/sightpress/module-interface/issues/19)) ([4b936a1](https://github.com/sightpress/module-interface/commit/4b936a18f3fd0ca7391b564383ad8f95db303c98))
+
 ## [0.5.0](https://github.com/sightpress/module-interface/compare/0.4.1...0.5.0) (2026-11-24)
 
 
