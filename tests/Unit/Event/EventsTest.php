@@ -35,6 +35,10 @@ use SightPress\Module\Event\SiteModuleChanged;
 use SightPress\Module\Event\ThemeApplied;
 use SightPress\Module\Event\ThemeColoursChanged;
 use SightPress\Module\Event\TranslationPublished;
+use SightPress\Module\Event\UserDataExported;
+use SightPress\Module\Event\UserErased;
+use SightPress\Module\Event\UserErasureCancelled;
+use SightPress\Module\Event\UserErasureScheduled;
 use SightPress\Module\Exception\InvalidValueException;
 use SightPress\Module\Internal\Guard;
 
@@ -42,6 +46,35 @@ use SightPress\Module\Internal\Guard;
 #[UsesClass(Guard::class)]
 final class EventsTest extends TestCase
 {
+    public function testPrivacyEventsCarryIdsAndDatesOnly(): void
+    {
+        $exported = new UserDataExported(7, null);
+        self::assertSame([7, null], [$exported->userId, $exported->requestedBy]);
+
+        $scheduled = new UserErasureScheduled(7, 7, new DateTimeImmutable('2026-12-04 10:00', new \DateTimeZone('Europe/Lisbon')));
+        self::assertSame([7, 7, '2026-12-04T10:00:00+00:00'], [$scheduled->userId, $scheduled->requestedBy, $scheduled->erasesAt->format(DATE_ATOM)]);
+
+        $cancelled = new UserErasureCancelled(7, 7);
+        self::assertSame([7, 7], [$cancelled->userId, $cancelled->cancelledBy]);
+
+        $erased = new UserErased(7, 2);
+        self::assertSame([7, 2], [$erased->userId, $erased->requestedBy]);
+
+        foreach ([
+            static fn (): object => new UserDataExported(-1, null),
+            static fn (): object => new UserErasureScheduled(-1, null, new DateTimeImmutable()),
+            static fn (): object => new UserErasureCancelled(-1, null),
+            static fn (): object => new UserErased(-1, null),
+        ] as $make) {
+            try {
+                $make();
+                self::fail('No exception.');
+            } catch (InvalidValueException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
     public function testPageEventsCarryIdsAndScalars(): void
     {
         $created = new PageCreated(4, 'en-GB', 2);

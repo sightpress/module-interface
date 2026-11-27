@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SightPress\Module\Registrar;
 
 use SightPress\Module\Block\BlockIcon;
+use SightPress\Module\Block\CodeLanguage;
 use SightPress\Module\Block\BlockType;
 use SightPress\Module\Block\BlockVariant;
 
@@ -33,4 +34,9 @@ interface BlockTypeRegistrar
      * Adds an icon that blocks with icons (such as `social_links`) can use (since 0.5). Its name must be unique.
      */
     public function addIcon(BlockIcon $icon): void;
+
+    /**
+     * Adds a language the `code` block offers (since 0.6). Its id and aliases must not be taken by another language.
+     */
+    public function addCodeLanguage(CodeLanguage $language): void;
 }

@@ -16,7 +16,8 @@ It is versioned on its own, with strict semantic versioning: a new major version
   always on or on by default for new sites.
 - `ModuleRegistrar`: one typed sub-registrar per kind of addition: `services()`, `routes()`, `blockTypes()`,
   `permissions()`, `migrations()`, `adminMenu()`, `views()`, `subscribers()`, `commands()`, `settings()`,
-  `search()`, `dashboard()`, `assistant()`, `seo()`, `sms()`, `schedule()` and `translations()`.
+  `search()`, `dashboard()`, `assistant()`, `seo()`, `sms()`, `schedule()`, `translations()`, `privacy()` and
+  `placeholders()`.
 - `Block\BlockType`: a content block with its schema, HTML and Markdown rendering, optional structured data and
   its accessibility checks (`A11yRule`, `A11yIssue`).
 - `Search\*`: site search. Modules turn their content into `SearchDocument`s with a `SearchDocumentProvider`; a
@@ -41,6 +42,16 @@ It is versioned on its own, with strict semantic versioning: a new major version
 - `Sms\*`: optional text messages. An `SmsProvider` sends an `SmsMessage` to a `PhoneNumber` (E.164, masked
   everywhere) and looks numbers up; `SmsWebhooks` reads delivery receipts and STOP replies. Failures throw
   `Exception\SmsException` with an `SmsFailure`.
+- `Privacy\*`: what a module keeps about people. A `PersonalDataProvider` per data set describes it
+  (`PersonalDataSet`: purpose, categories, suggested lawful basis, `Retention`, `ErasureRule`), exports a person's
+  records and erases them (`UserRef` in, `ErasureResult` counts out); `#[PersonalData]` marks the fields.
+  `CookieDeclaration` lists cookies and browser storage, a `ProcessorSource` names the third parties data goes to
+  while a feature is configured (`ProcessorDeclaration`), and `ConsentManager` / `ConsentPurpose` handle consent.
+  Events `UserDataExported`, `UserErasureScheduled`, `UserErasureCancelled` and `UserErased`.
+- `Placeholder\*`: details editors can put in text (`{{ acme_events.next_date }}`), with a `PlaceholderResolver`.
+- `Block\CodeLanguage`, `CodeHighlighter`, `CodeToken`: extra languages for the `code` block.
+- `Locale\LocaleFormats`, `Money\Money` + `MoneyFormatter`, `Site\SiteLanguages`: dates, numbers and calendar
+  names in the format locale, money by its own currency, and whether the site has more than one language.
 - Value objects: `Routing\Route` (with an optional `permission` that core checks and a `critical` flag for
   two-step confirmation), `Access\Permission`, `Admin\AdminMenuItem`, `Setting\Setting`,
   `Console\CommandParameter`; plus `Migration\MigrationProvider` and the `Console\Command` contract.
@@ -53,7 +64,9 @@ message that names the field and the rule.
 
 Interfaces that modules implement change only in a major release. Interfaces that core implements (the registrars,
 `Block\BlockContext`, `Console\CommandInput`, `Console\CommandOutput`, `Dashboard\DashboardContext`,
-`Assistant\AssistantContext`, `Http\Screens`, `Setting\SettingValues` and `Audit\AuditTrail`) may gain methods in a minor release, so modules must not implement them.
+`Assistant\AssistantContext`, `Http\Screens`, `Setting\SettingValues`, `Audit\AuditTrail`,
+`Privacy\ConsentManager`, `Placeholder\PlaceholderContext`, `Locale\LocaleFormats`, `Money\MoneyFormatter` and
+`Site\SiteLanguages`) may gain methods in a minor release, so modules must not implement them.
 
 ## Requirements
 

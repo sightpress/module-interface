@@ -6,6 +6,7 @@ namespace SightPress\Module\Tests\Fake\Registrar;
 
 use SightPress\Module\Block\BlockIcon;
 use SightPress\Module\Block\BlockType;
+use SightPress\Module\Block\CodeLanguage;
 use SightPress\Module\Block\BlockVariant;
 use SightPress\Module\Registrar\BlockTypeRegistrar;
 
@@ -19,6 +20,9 @@ final class InMemoryBlockTypeRegistrar implements BlockTypeRegistrar
 
     /** @var array<string, BlockIcon> */
     public array $icons = [];
+
+    /** @var array<string, CodeLanguage> id → language */
+    public array $codeLanguages = [];
 
     public function add(string $blockType): void
     {
@@ -42,5 +46,17 @@ final class InMemoryBlockTypeRegistrar implements BlockTypeRegistrar
             throw DuplicateRegistration::of('Icon', $icon->name);
         }
         $this->icons[$icon->name] = $icon;
+    }
+
+    public function addCodeLanguage(CodeLanguage $language): void
+    {
+        foreach ([$language->id, ...$language->aliases] as $id) {
+            foreach ($this->codeLanguages as $known) {
+                if ($id === $known->id || in_array($id, $known->aliases, true)) {
+                    throw DuplicateRegistration::of('Code language', $id);
+                }
+            }
+        }
+        $this->codeLanguages[$language->id] = $language;
     }
 }

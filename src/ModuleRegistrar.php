@@ -11,6 +11,8 @@ use SightPress\Module\Registrar\CommandRegistrar;
 use SightPress\Module\Registrar\DashboardRegistrar;
 use SightPress\Module\Registrar\MigrationRegistrar;
 use SightPress\Module\Registrar\PermissionRegistrar;
+use SightPress\Module\Registrar\PlaceholderRegistrar;
+use SightPress\Module\Registrar\PrivacyRegistrar;
 use SightPress\Module\Registrar\RouteRegistrar;
 use SightPress\Module\Registrar\ScheduleRegistrar;
 use SightPress\Module\Registrar\SearchRegistrar;
@@ -71,4 +73,10 @@ interface ModuleRegistrar
 
     /** Translations of the module's interface text (since 0.5). */
     public function translations(): TranslationRegistrar;
+
+    /** Personal data, cookies, processors and consent purposes (since 0.6). */
+    public function privacy(): PrivacyRegistrar;
+
+    /** Details editors can put in text, such as `{{ acme_events.next_date }}` (since 0.6). */
+    public function placeholders(): PlaceholderRegistrar;
 }

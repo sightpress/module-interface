@@ -70,9 +70,36 @@ use SightPress\Module\Sms\SmsReceipt;
 use SightPress\Module\Sms\SmsResult;
 use SightPress\Module\Sms\SmsWebhooks;
 use SightPress\Module\Text\Message;
+use SightPress\Module\Block\CodeHighlighter;
+use SightPress\Module\Block\CodeLanguage;
+use SightPress\Module\Block\CodeToken;
+use SightPress\Module\Event\UserDataExported;
+use SightPress\Module\Event\UserErased;
+use SightPress\Module\Event\UserErasureCancelled;
+use SightPress\Module\Event\UserErasureScheduled;
+use SightPress\Module\Locale\LocaleFormats;
+use SightPress\Module\Money\Money;
+use SightPress\Module\Money\MoneyFormatter;
+use SightPress\Module\Placeholder\Placeholder;
+use SightPress\Module\Placeholder\PlaceholderContext;
+use SightPress\Module\Placeholder\PlaceholderResolver;
+use SightPress\Module\Privacy\ConsentManager;
+use SightPress\Module\Privacy\ConsentPurpose;
+use SightPress\Module\Privacy\CookieDeclaration;
+use SightPress\Module\Privacy\ErasureResult;
+use SightPress\Module\Privacy\PersonalData;
+use SightPress\Module\Privacy\PersonalDataProvider;
+use SightPress\Module\Privacy\PersonalDataSet;
+use SightPress\Module\Privacy\ProcessorDeclaration;
+use SightPress\Module\Privacy\ProcessorSource;
+use SightPress\Module\Privacy\Retention;
+use SightPress\Module\Privacy\UserRef;
+use SightPress\Module\Registrar\PlaceholderRegistrar;
+use SightPress\Module\Registrar\PrivacyRegistrar;
+use SightPress\Module\Site\SiteLanguages;
 
 /**
- * Pins the shape of the 0.4 and 0.5 contracts, so a change shows up in review: adding a constructor argument at the end
+ * Pins the shape of the 0.4, 0.5 and 0.6 contracts, so a change shows up in review: adding a constructor argument at the end
  * (with a default) or a method to a core-implemented interface is a minor release; renaming, reordering or
  * removing anything, or adding a method to an interface that modules implement, is a major one.
  */
@@ -118,6 +145,22 @@ final class ContractShapeTest extends TestCase
         yield 'SmsOptChange' => [SmsOptChange::class, ['from', 'stopped', 'at']];
         yield 'Route' => [Route::class, ['name', 'path', 'handler', '?methods', '?middleware', '?permission', '?critical']];
         yield 'PageTransitioned' => [PageTransitioned::class, ['pageId', 'transition', 'from', 'to', 'actorId', '?comment']];
+        yield 'UserRef' => [UserRef::class, ['userId', 'email', '?phone']];
+        yield 'Retention' => [Retention::class, ['?days', '?setting']];
+        yield 'PersonalDataSet' => [PersonalDataSet::class, ['key', 'label', 'purpose', 'categories', 'lawfulBasis', 'retention', '?erasure', '?notes']];
+        yield 'ErasureResult' => [ErasureResult::class, ['?deleted', '?pseudonymised', '?files']];
+        yield 'PersonalData' => [PersonalData::class, ['dataSet', '?category']];
+        yield 'CookieDeclaration' => [CookieDeclaration::class, ['name', 'purpose', 'lifetime', 'strictlyNecessary', '?consentPurpose', '?storage']];
+        yield 'ProcessorDeclaration' => [ProcessorDeclaration::class, ['id', 'name', 'dataSent', 'countries', '?hosts', '?privacyPolicyUrl', '?safeguards']];
+        yield 'ConsentPurpose' => [ConsentPurpose::class, ['key', 'label', 'description']];
+        yield 'UserDataExported' => [UserDataExported::class, ['userId', 'requestedBy']];
+        yield 'UserErasureScheduled' => [UserErasureScheduled::class, ['userId', 'requestedBy', 'erasesAt']];
+        yield 'UserErasureCancelled' => [UserErasureCancelled::class, ['userId', 'cancelledBy']];
+        yield 'UserErased' => [UserErased::class, ['userId', 'requestedBy']];
+        yield 'Placeholder' => [Placeholder::class, ['name', 'label', 'description', 'type', 'personal', 'resolver']];
+        yield 'CodeLanguage' => [CodeLanguage::class, ['id', 'label', '?aliases', '?highlighter']];
+        yield 'CodeToken' => [CodeToken::class, ['text', '?kind']];
+        yield 'Money' => [Money::class, ['minorUnits', 'currency']];
     }
 
     /**
@@ -169,10 +212,21 @@ final class ContractShapeTest extends TestCase
         yield 'ScheduleRegistrar' => [ScheduleRegistrar::class, ['add(job): void']];
         yield 'TranslationRegistrar' => [TranslationRegistrar::class, ['add(directory): void']];
         yield 'StyledBlockType' => [StyledBlockType::class, ['styles(): SightPress\Module\Block\BlockStyles']];
-        yield 'BlockTypeRegistrar' => [BlockTypeRegistrar::class, ['add(blockType): void', 'addVariant(blockType, variant): void', 'addIcon(icon): void']];
+        yield 'BlockTypeRegistrar' => [BlockTypeRegistrar::class, ['add(blockType): void', 'addVariant(blockType, variant): void', 'addIcon(icon): void', 'addCodeLanguage(language): void']];
         yield 'SmsProvider' => [SmsProvider::class, ['id(): string', 'label(): string', 'description(): string', 'capabilities(): SightPress\Module\Sms\SmsCapabilities', 'send(message, connection): SightPress\Module\Sms\SmsResult', 'lookup(number, connection): SightPress\Module\Sms\PhoneLookupResult']];
         yield 'SmsWebhooks' => [SmsWebhooks::class, ['readWebhook(request, connection): array']];
         yield 'SmsRegistrar' => [SmsRegistrar::class, ['addProvider(provider): void']];
+        yield 'PersonalDataProvider' => [PersonalDataProvider::class, ['describe(): SightPress\Module\Privacy\PersonalDataSet', 'export(user): iterable', 'erase(user): SightPress\Module\Privacy\ErasureResult']];
+        yield 'ProcessorSource' => [ProcessorSource::class, ['processors(): iterable']];
+        yield 'ConsentManager' => [ConsentManager::class, ['purposes(): array', 'allows(request, purpose): bool', 'hasConsented(userId, purpose): bool', 'record(userId, purpose, textVersion): void', 'withdraw(userId, purpose): void']];
+        yield 'PrivacyRegistrar' => [PrivacyRegistrar::class, ['addProvider(provider): void', 'addCookie(cookie): void', 'addProcessors(source): void', 'addConsentPurpose(purpose): void']];
+        yield 'PlaceholderResolver' => [PlaceholderResolver::class, ['resolve(name, context): DateTimeImmutable|string|int|float|null']];
+        yield 'PlaceholderContext' => [PlaceholderContext::class, ['locale(): string', 'viewerId(): ?int']];
+        yield 'PlaceholderRegistrar' => [PlaceholderRegistrar::class, ['add(placeholder): void']];
+        yield 'CodeHighlighter' => [CodeHighlighter::class, ['highlight(code, language): iterable']];
+        yield 'LocaleFormats' => [LocaleFormats::class, ['locale(): string', 'timeZone(): DateTimeZone', 'withLocale(locale): SightPress\\Module\\Locale\\LocaleFormats', 'date(value, ?style): string', 'time(value, ?style): string', 'dateTime(value, ?dateStyle, ?timeStyle): string', 'monthName(month, ?width, ?standAlone): string', 'weekdayName(isoDay, ?width, ?standAlone): string', 'firstDayOfWeek(): int', 'number(value, ?fractionDigits): string', 'percent(ratio, ?fractionDigits): string', 'fileSize(bytes): string']];
+        yield 'MoneyFormatter' => [MoneyFormatter::class, ['format(money): string']];
+        yield 'SiteLanguages' => [SiteLanguages::class, ['isMultilingual(): bool', 'locales(): array', 'default(): string']];
     }
 
     /**
@@ -204,6 +258,8 @@ final class ContractShapeTest extends TestCase
             'sms' => SmsRegistrar::class,
             'schedule' => ScheduleRegistrar::class,
             'translations' => TranslationRegistrar::class,
+            'privacy' => PrivacyRegistrar::class,
+            'placeholders' => PlaceholderRegistrar::class,
         ];
         foreach ($subRegistrars as $method => $type) {
             $returnType = $registrar->getMethod($method)->getReturnType();

@@ -28,6 +28,8 @@ final readonly class InMemoryModuleRegistrar implements ModuleRegistrar
     public InMemorySmsRegistrar $sms;
     public InMemoryScheduleRegistrar $schedule;
     public InMemoryTranslationRegistrar $translations;
+    public InMemoryPrivacyRegistrar $privacy;
+    public InMemoryPlaceholderRegistrar $placeholders;
 
     public function __construct()
     {
@@ -48,6 +50,8 @@ final readonly class InMemoryModuleRegistrar implements ModuleRegistrar
         $this->sms = new InMemorySmsRegistrar();
         $this->schedule = new InMemoryScheduleRegistrar();
         $this->translations = new InMemoryTranslationRegistrar();
+        $this->privacy = new InMemoryPrivacyRegistrar();
+        $this->placeholders = new InMemoryPlaceholderRegistrar();
     }
 
     public function services(): InMemoryServiceRegistrar
@@ -133,5 +137,15 @@ final readonly class InMemoryModuleRegistrar implements ModuleRegistrar
     public function translations(): InMemoryTranslationRegistrar
     {
         return $this->translations;
+    }
+
+    public function privacy(): InMemoryPrivacyRegistrar
+    {
+        return $this->privacy;
+    }
+
+    public function placeholders(): InMemoryPlaceholderRegistrar
+    {
+        return $this->placeholders;
     }
 }

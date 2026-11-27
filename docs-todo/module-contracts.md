@@ -1,4 +1,4 @@
-# Module contracts (0.5)
+# Module contracts (0.6)
 
 ## What it does
 
@@ -32,8 +32,11 @@ settings, admin menu entries). No permissions are needed to use the package itse
 | `sms()`          | text message providers (0.5)                             | `Sms\SmsProvider` class name               |
 | `schedule()`     | background work for `schedule:run` (0.5)                 | `Schedule\ScheduledJob` class name         |
 | `translations()` | XLIFF translations in the module's own domain (0.5)      | folder of `<domain>.<locale>.xlf` files    |
+| `privacy()`      | personal data sets, cookies, processors, consent purposes (0.6) | `Privacy\PersonalDataProvider`, `Privacy\ProcessorSource` class names, `CookieDeclaration`, `ConsentPurpose` |
+| `placeholders()` | details editors can put in text (0.6)                    | `Placeholder\Placeholder`                  |
 
-`blockTypes()` also takes `addVariant()` (a variant for another block type) and `addIcon()` (0.5).
+`blockTypes()` also takes `addVariant()` (a variant for another block type) and `addIcon()` (0.5), and
+`addCodeLanguage()` (0.6).
 
 ## Manifest
 
@@ -150,6 +153,39 @@ file, hosts and an optional brand colour (`#rrggbb`).
   rate limited, timeout, unsupported, invalid signature, unavailable).
 - `Notification\NotificationChannel`: `email` or `sms`.
 
+## Privacy (0.6)
+
+Core's ADR-0075 (privacy model) and ADR-0077 (this contract). Plain language, not legal advice.
+
+- `PersonalDataProvider`, one per data set a module keeps about people: `describe()` → `PersonalDataSet` (dotted
+  key, label, purpose, `PersonalDataCategory` list, the *suggested* `LawfulBasis`, `Retention` in days or while the
+  account exists, `ErasureRule` delete / pseudonymise / keep with a reason); `export(UserRef)` → JSON-safe records;
+  `erase(UserRef)` → `ErasureResult` (counts only), safe to run again after a backup restore, files included.
+- `UserRef`: account id, email and optional `PhoneNumber`; masked in dumps, not serialisable.
+- `#[PersonalData('acme_events.bookings')]` on every property that holds personal data; core fails a field whose
+  data set has no provider.
+- `CookieDeclaration`: name, purpose, lifetime (seconds, or null for the browser session), strictly necessary or
+  not, `StorageKind` (cookie, local or session storage). Not strictly necessary → it names a `ConsentPurpose` and
+  waits for `ConsentManager::allows()`.
+- `ProcessorSource::processors()` → `ProcessorDeclaration`s (who, what is sent, countries, hosts, privacy policy,
+  safeguards), only while the feature is configured. Core's outgoing HTTP client only reaches declared hosts (GD-1).
+- `ConsentManager` (site container): `purposes()`, `allows(request, purpose)` (false until chosen; `Sec-GPC: 1`
+  is no), `hasConsented()`, `record()` with the text version, `withdraw()`.
+- Events: `UserDataExported`, `UserErasureScheduled`, `UserErasureCancelled`, `UserErased` (ids and dates only).
+
+## Placeholders, code languages and formats (0.6)
+
+- `Placeholder`: dotted name (`acme_events.next_date`; `site.*` and `user.*` are core's), label, description,
+  `PlaceholderType`, personal or not, resolver class. `PlaceholderResolver::resolve()` returns text, a number, a
+  date or null, never HTML. `PlaceholderContext`: locale, and the viewer id only for personal placeholders on
+  members-only pages. ADR-0078.
+- `CodeLanguage`: id, label, aliases, optional `CodeHighlighter` that returns `CodeToken`s (text + `CodeTokenKind`)
+  whose text joins back to the code. ADR-0079.
+- `LocaleFormats` (site container): `date()`, `time()`, `dateTime()` with a `FormatStyle`, `monthName()` /
+  `weekdayName()` with a `NameWidth`, `firstDayOfWeek()`, `number()`, `percent()`, `fileSize()`, `withLocale()`.
+  `Money` (integer minor units + ISO 4217 code) and `MoneyFormatter` (by the currency, the same in every locale).
+  `SiteLanguages`: `isMultilingual()`, `locales()`, `default()`; hide language UI on a single-locale site. ADR-0080.
+
 ## Accessibility
 
 - `BlockType::render()` must meet WCAG 2.2 AA and escape output; `renderMarkdown()` gives a text alternative
@@ -167,16 +203,18 @@ file, hosts and an optional brand colour (`#rrggbb`).
 
 Interfaces that modules implement (`ModuleInterface`, `BlockType`, `A11yRule`, `Command`, `MigrationProvider`,
 `SearchDocumentProvider`, `SearchBackend`, `DashboardWidget`, `AssistantProvider`, `StreamingAssistantProvider`,
-`AssistantTask`, `SeoProvider`, `ScheduledJob`, `StyledBlockType`, `SmsProvider`, `SmsWebhooks`) only change in a
+`AssistantTask`, `SeoProvider`, `ScheduledJob`, `StyledBlockType`, `SmsProvider`, `SmsWebhooks`,
+`PersonalDataProvider`, `ProcessorSource`, `PlaceholderResolver`, `CodeHighlighter`) only change in a
 major release. Interfaces that core implements (`ModuleRegistrar`, the
 sub-registrars, `BlockContext`, `CommandInput`, `CommandOutput`, `DashboardContext`, `AssistantContext`, `Screens`,
-`SettingValues`, `AuditTrail`) may gain methods in a minor release. `tests/Unit/Contract/ContractShapeTest.php`
-pins the 0.4 and 0.5 shapes.
+`SettingValues`, `AuditTrail`, `ConsentManager`, `PlaceholderContext`, `LocaleFormats`, `MoneyFormatter`,
+`SiteLanguages`) may gain methods in a minor release. `tests/Unit/Contract/ContractShapeTest.php` pins the 0.4, 0.5
+and 0.6 shapes.
 
 ## Code and tests
 
 - Contracts: `src/`
 - Contract tests with fake modules and in-memory registrars: `tests/Unit/Contract/` (registration, search,
-  dashboard, assistant, shapes), fakes in `tests/Fake/` (an in-memory search back-end and an echo assistant
+  dashboard, assistant, privacy and formats, shapes), fakes in `tests/Fake/` (an in-memory search back-end and an echo assistant
   provider in `tests/Fake/Labs/`)
 - Value object tests: `tests/Unit/`
